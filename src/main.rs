@@ -1,20 +1,32 @@
 fn main() {
-    let linked = parse(&['A', 'B', 'C'], 'B');
+    let linked = LinkedList::parse(&['A', 'B', 'C'], 'B');
     // println!("{:?}", node.into_iter().take(5).collect::<Vec<_>>());
     let floyd = Floyd {};
-    println!("{:?}", floyd.find_cycle(linked.0, &linked.1));
+    println!("{:?}", floyd.find_cycle(linked.start, &linked.fs));
+}
+
+struct LinkedList<T> {
+    pub start: T,
+    pub fs: Box<dyn Fn(T) -> Option<T>>,
+}
+
+impl<T: Copy> LinkedList<T> {
+    fn parse(seq: &[T], _cycle_start: T) -> LinkedList<T> {
+        LinkedList {
+            start: seq[0],
+            fs: Box::new(|_t| None), // FIXME!
+        }
+    }
 }
 
 type Cycle = (usize, usize);
 
-type LinkedList<T> = (T, Box<dyn Fn(T) -> Option<T>>);
-
-fn parse<T: Copy>(seq: &[T], _cycle_start: T) -> LinkedList<T> {
-    (seq[0], Box::new(|_t| None)) // FIXME!
-}
-
 trait CycleDetector {
-    fn find_cycle<T: Clone + PartialEq, FS: Fn(T) -> Option<T>>(&self, start: T, successor: FS) -> Option<Cycle>;
+    fn find_cycle<T: Clone + PartialEq, FS: Fn(T) -> Option<T>>(
+        &self,
+        start: T,
+        successor: FS,
+    ) -> Option<Cycle>;
 }
 
 struct Floyd {}
