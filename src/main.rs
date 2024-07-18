@@ -1,5 +1,7 @@
+use std::{collections::HashMap, convert::From, hash::Hash};
+
 fn main() {
-    let list = LinkedList::parse(&['A', 'B', 'C'], 'B');
+    let list = LinkedListImpl::from([('A', 'B'), ('B', 'C'), ('C', 'B')]);
     // println!("{:?}", node.into_iter().take(5).collect::<Vec<_>>());
     // let floyd = Floyd {};
     // println!("{:?}", floyd.find_cycle(list));
@@ -7,40 +9,51 @@ fn main() {
     println!("{:?}", brent.find_cycle(list));
 }
 
-#[allow(unused)]
-struct LinkedList<T> {
-    pub start: T,
-    pub fs: Box<dyn Fn(T) -> Option<T>>,
+trait LinkedList<T> {
+    fn start(&self) -> Option<T>;
+    fn step(&self, t: Option<T>) -> Option<T>;
 }
 
-impl<T: Copy + PartialEq> LinkedList<T> {
-    fn parse(seq: &[T], _cycle_start: T) -> LinkedList<T> {
-        LinkedList {
-            start: seq[0],
-            fs: Box::new(|_t| None), // FIXME!
-        }
+struct LinkedListImpl<T> {
+    start: Option<T>,
+    map: HashMap<T, T>,
+}
+
+impl<T: Copy + Eq + Hash, const N: usize> From<[(T, T); N]> for LinkedListImpl<T> {
+    fn from(arr: [(T, T); N]) -> Self {
+        let start = arr.get(0).map_or(None, |edge| Some(edge.0));
+        let map = HashMap::from(arr);
+        LinkedListImpl { start, map }
+    }
+}
+
+impl<T: Copy + Eq + Hash> LinkedList<T> for LinkedListImpl<T> {
+    fn start(&self) -> Option<T> {
+        self.start
     }
 
     fn step(&self, t: Option<T>) -> Option<T> {
-        t.map_or(None, |t| (self.fs)(t))
-    }    
+        t.map_or(None, |t| self.map.get(&t).copied())
+    }
 }
 
-type Cycle = (usize, usize);
+#[derive(Debug)]
+#[allow(unused)]
+struct Cycle(usize, usize);
 
-trait CycleDetector {
-    fn find_cycle<T: Copy + PartialEq>(&self, list: LinkedList<T>) -> Option<Cycle>;
+trait CycleDetector<T> {
+    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle>;
 }
 
 struct Floyd {}
 
-impl CycleDetector for Floyd {
+impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
     // Robert W. Floyd's "Tortoise and Hare" algorithm.
-    fn find_cycle<T: Copy + PartialEq>(&self, list: LinkedList<T>) -> Option<Cycle> {
+    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle> {
         // Find a repetition list[i] = list[2i]
         // The hare moves twice as fast as the tortoise.
-        let mut tort = Some(list.start);
-        let mut hare = Some(list.start);
+        let mut tort = list.start();
+        let mut hare = list.start();
         loop {
             tort = list.step(tort);
             hare = list.step(list.step(hare));
@@ -60,7 +73,7 @@ impl CycleDetector for Floyd {
         //
         // Find start of repetition. The hare and tortoise move at the same speed.
         let mut start = 0;
-        tort = Some(list.start);
+        tort = list.start();
         while tort != hare {
             tort = list.step(tort);
             hare = list.step(hare);
@@ -79,19 +92,19 @@ impl CycleDetector for Floyd {
             }
         }
 
-        Some((start, length))
+        Some(Cycle(start, length))
     }
 }
 
 struct Brent {}
 
-impl CycleDetector for Brent {
+impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
     // Richard P. Brent's algorithm, also known as the "Teleporting Tortoise".
-    fn find_cycle<T: Copy + PartialEq>(&self, list: LinkedList<T>) -> Option<Cycle> {
+    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle> {
         // Main phase: hare searches successive powers of two while the
         // tortoise teleports to the hare's position after each pass.
-        let mut tort = Some(list.start);
-        let mut hare = Some(list.start);
+        let mut tort = list.start();
+        let mut hare = list.start();
         let mut limit = 1;
         let mut length = 0;
         loop {
@@ -103,7 +116,9 @@ impl CycleDetector for Brent {
             }
             hare = list.step(hare);
             length += 1;
-            if hare == None || hare == tort { break; }
+            if hare == None || hare == tort {
+                break;
+            }
         }
 
         if hare == None {
@@ -111,13 +126,13 @@ impl CycleDetector for Brent {
         }
 
         /*
-        * With the tortoise starting from the head of the list and the hare
-        * spotted 'length' steps ahead, advance the tortoise and hare at the
-        * same speed until they meet at the start of the repetition.
-        */
+         * With the tortoise starting from the head of the list and the hare
+         * spotted 'length' steps ahead, advance the tortoise and hare at the
+         * same speed until they meet at the start of the repetition.
+         */
         let mut start = 0;
-        tort = Some(list.start);
-        hare = Some(list.start);
+        tort = list.start();
+        hare = list.start();
         for _ in 0..length {
             hare = list.step(hare);
         }
@@ -127,6 +142,6 @@ impl CycleDetector for Brent {
             start += 1;
         }
 
-        Some((start, length))
+        Some(Cycle(start, length))
     }
 }
