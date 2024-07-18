@@ -1,7 +1,7 @@
 use std::{collections::HashMap, convert::From, hash::Hash};
 
 fn main() {
-    let list = LinkedListImpl::from([('A', 'B'), ('B', 'C'), ('C', 'B')]);
+    let list = List::from([('A', 'B'), ('B', 'C'), ('C', 'B')]);
     // println!("{:?}", node.into_iter().take(5).collect::<Vec<_>>());
     // let floyd = Floyd {};
     // println!("{:?}", floyd.find_cycle(list));
@@ -9,25 +9,25 @@ fn main() {
     println!("{:?}", brent.find_cycle(list));
 }
 
-trait LinkedList<T> {
+trait SinglyLinked<T> {
     fn start(&self) -> Option<T>;
     fn step(&self, t: Option<T>) -> Option<T>;
 }
 
-struct LinkedListImpl<T> {
+struct List<T> {
     start: Option<T>,
     map: HashMap<T, T>,
 }
 
-impl<T: Copy + Eq + Hash, const N: usize> From<[(T, T); N]> for LinkedListImpl<T> {
+impl<T: Copy + Eq + Hash, const N: usize> From<[(T, T); N]> for List<T> {
     fn from(arr: [(T, T); N]) -> Self {
         let start = arr.get(0).map_or(None, |edge| Some(edge.0));
         let map = HashMap::from(arr);
-        LinkedListImpl { start, map }
+        List { start, map }
     }
 }
 
-impl<T: Copy + Eq + Hash> LinkedList<T> for LinkedListImpl<T> {
+impl<T: Copy + Eq + Hash> SinglyLinked<T> for List<T> {
     fn start(&self) -> Option<T> {
         self.start
     }
@@ -42,14 +42,14 @@ impl<T: Copy + Eq + Hash> LinkedList<T> for LinkedListImpl<T> {
 struct Cycle(usize, usize);
 
 trait CycleDetector<T> {
-    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle>;
+    fn find_cycle(&self, list: impl SinglyLinked<T>) -> Option<Cycle>;
 }
 
 struct Floyd {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
     // Robert W. Floyd's "Tortoise and Hare" algorithm.
-    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle> {
+    fn find_cycle(&self, list: impl SinglyLinked<T>) -> Option<Cycle> {
         // Find a repetition list[i] = list[2i]
         // The hare moves twice as fast as the tortoise.
         let mut tort = list.start();
@@ -100,7 +100,7 @@ struct Brent {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
     // Richard P. Brent's algorithm, also known as the "Teleporting Tortoise".
-    fn find_cycle(&self, list: impl LinkedList<T>) -> Option<Cycle> {
+    fn find_cycle(&self, list: impl SinglyLinked<T>) -> Option<Cycle> {
         // Main phase: hare searches successive powers of two while the
         // tortoise teleports to the hare's position after each pass.
         let mut tort = list.start();
