@@ -147,9 +147,51 @@ mod tests {
     use crate::{Brent, Cycle, CycleDetector, Floyd, List};
 
     fn cycle_detector_tester<D: CycleDetector<char>>(d: D) {
+        assert_eq!(d.find_cycle(List::from([])), None, "empty");
+        // TODO: Single element list
+        // assert_eq!(
+        //     d.find_cycle(List::from([])),
+        //     None,
+        //     "A"
+        // );
+        assert_eq!(
+            d.find_cycle(List::from([('A', 'B'), ('B', 'C')])),
+            None,
+            "ABC"
+        );
+        assert_eq!(
+            d.find_cycle(List::from([('A', 'A')])),
+            Some(Cycle(0, 1)),
+            "AA"
+        );
+        assert_eq!(
+            d.find_cycle(List::from([('A', 'B'), ('B', 'B')])),
+            Some(Cycle(1, 1)),
+            "ABB"
+        );
+        assert_eq!(
+            d.find_cycle(List::from([('A', 'B'), ('B', 'A')])),
+            Some(Cycle(0, 2)),
+            "ABA"
+        );
         assert_eq!(
             d.find_cycle(List::from([('A', 'B'), ('B', 'C'), ('C', 'B')])),
-            Some(Cycle(1, 2))
+            Some(Cycle(1, 2)),
+            "ABCB"
+        );
+        assert_eq!(
+            d.find_cycle(List::from([
+                ('A', 'B'),
+                ('B', 'C'),
+                ('C', 'D'),
+                ('D', 'E'),
+                ('E', 'F'),
+                ('F', 'G'),
+                ('G', 'H'),
+                ('H', 'D')
+            ])),
+            Some(Cycle(3, 5)),
+            "ABCDEFGHD"
         );
     }
 
