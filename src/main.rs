@@ -2,11 +2,8 @@ use std::{collections::HashMap, convert::From, hash::Hash};
 
 fn main() {
     let list = List::from([('A', 'B'), ('B', 'C'), ('C', 'B')]);
-    // println!("{:?}", node.into_iter().take(5).collect::<Vec<_>>());
-    // let floyd = Floyd {};
-    // println!("{:?}", floyd.find_cycle(list));
-    let brent = Brent {};
-    println!("{:?}", brent.find_cycle(list));
+    let detector = Floyd::default();
+    println!("{:?}", detector.find_cycle(list));
 }
 
 trait SinglyLinked<T> {
@@ -37,14 +34,14 @@ impl<T: Copy + Eq + Hash> SinglyLinked<T> for List<T> {
     }
 }
 
-#[derive(Debug)]
-#[allow(unused)]
+#[derive(Debug, PartialEq)]
 struct Cycle(usize, usize);
 
 trait CycleDetector<T> {
     fn find_cycle(&self, list: impl SinglyLinked<T>) -> Option<Cycle>;
 }
 
+#[derive(Default)]
 struct Floyd {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
@@ -96,6 +93,7 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
     }
 }
 
+#[derive(Default)]
 struct Brent {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
@@ -125,11 +123,9 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
             return None;
         }
 
-        /*
-         * With the tortoise starting from the head of the list and the hare
-         * spotted 'length' steps ahead, advance the tortoise and hare at the
-         * same speed until they meet at the start of the repetition.
-         */
+        // With the tortoise starting from the head of the list and the hare
+        // spotted 'length' steps ahead, advance the tortoise and hare at the
+        // same speed until they meet at the start of the repetition.
         let mut start = 0;
         tort = list.start();
         hare = list.start();
@@ -143,5 +139,27 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
         }
 
         Some(Cycle(start, length))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Brent, Cycle, CycleDetector, Floyd, List};
+
+    fn cycle_detector_tester<D: CycleDetector<char>>(d: D) {
+        assert_eq!(
+            d.find_cycle(List::from([('A', 'B'), ('B', 'C'), ('C', 'B')])),
+            Some(Cycle(1, 2))
+        );
+    }
+
+    #[test]
+    fn floyd_test() {
+        cycle_detector_tester(Floyd::default());
+    }
+
+    #[test]
+    fn brent_test() {
+        cycle_detector_tester(Brent::default());
     }
 }
