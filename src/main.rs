@@ -1,7 +1,7 @@
-use std::{collections::HashMap, convert::From, hash::Hash};
+use std::{cmp::max, collections::HashMap, convert::From, hash::Hash};
 
 fn main() {
-    let list = List::from([('A', 'B'), ('B', 'C'), ('C', 'B')]);
+    let list = List::from(['A', 'B', 'C', 'B']);
     let detector = Floyd::default();
     println!("{:?}", detector.find_cycle(list));
 }
@@ -16,10 +16,14 @@ struct List<T> {
     map: HashMap<T, T>,
 }
 
-impl<T: Copy + Eq + Hash, const N: usize> From<[(T, T); N]> for List<T> {
-    fn from(arr: [(T, T); N]) -> Self {
-        let start = arr.get(0).map_or(None, |edge| Some(edge.0));
-        let map = HashMap::from(arr);
+impl<T: Copy + Eq + Hash, const N: usize> From<[T; N]> for List<T> {
+    fn from(arr: [T; N]) -> Self {
+        let start = arr.get(0).copied();
+        let capacity = max(arr.len() as isize - 1, 0) as usize;
+        let mut map = HashMap::with_capacity(capacity);
+        for i in 0..capacity {
+            map.insert(arr[i], arr[i + 1]);
+        }
         List { start, map }
     }
 }
@@ -148,48 +152,30 @@ mod tests {
 
     fn cycle_detector_tester<D: CycleDetector<char>>(d: D) {
         assert_eq!(d.find_cycle(List::from([])), None, "empty");
-        // TODO: Single element list
-        // assert_eq!(
-        //     d.find_cycle(List::from([])),
-        //     None,
-        //     "A"
-        // );
+        assert_eq!(d.find_cycle(List::from(['A'])), None, "A");
+        assert_eq!(d.find_cycle(List::from(['A', 'B', 'C'])), None, "ABC");
         assert_eq!(
-            d.find_cycle(List::from([('A', 'B'), ('B', 'C')])),
-            None,
-            "ABC"
-        );
-        assert_eq!(
-            d.find_cycle(List::from([('A', 'A')])),
+            d.find_cycle(List::from(['A', 'A'])),
             Some(Cycle(0, 1)),
             "AA"
         );
         assert_eq!(
-            d.find_cycle(List::from([('A', 'B'), ('B', 'B')])),
+            d.find_cycle(List::from(['A', 'B', 'B'])),
             Some(Cycle(1, 1)),
             "ABB"
         );
         assert_eq!(
-            d.find_cycle(List::from([('A', 'B'), ('B', 'A')])),
+            d.find_cycle(List::from(['A', 'B', 'A'])),
             Some(Cycle(0, 2)),
             "ABA"
         );
         assert_eq!(
-            d.find_cycle(List::from([('A', 'B'), ('B', 'C'), ('C', 'B')])),
+            d.find_cycle(List::from(['A', 'B', 'C', 'B'])),
             Some(Cycle(1, 2)),
             "ABCB"
         );
         assert_eq!(
-            d.find_cycle(List::from([
-                ('A', 'B'),
-                ('B', 'C'),
-                ('C', 'D'),
-                ('D', 'E'),
-                ('E', 'F'),
-                ('F', 'G'),
-                ('G', 'H'),
-                ('H', 'D')
-            ])),
+            d.find_cycle(List::from(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'D'])),
             Some(Cycle(3, 5)),
             "ABCDEFGHD"
         );
