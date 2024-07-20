@@ -18,7 +18,7 @@ struct List<T> {
 
 impl<T: Copy + Eq + Hash, const N: usize> From<[T; N]> for List<T> {
     fn from(arr: [T; N]) -> Self {
-        let start = arr.get(0).copied();
+        let start = arr.first().copied();
         let capacity = max(arr.len() as isize - 1, 0) as usize;
         let mut map = HashMap::with_capacity(capacity);
         for i in 0..capacity {
@@ -34,7 +34,7 @@ impl<T: Copy + Eq + Hash> SinglyLinked<T> for List<T> {
     }
 
     fn step(&self, t: Option<T>) -> Option<T> {
-        t.map_or(None, |t| self.map.get(&t).copied())
+        t.and_then(|t| self.map.get(&t).copied())
     }
 }
 
@@ -58,14 +58,12 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
         loop {
             tort = list.step(tort);
             hare = list.step(list.step(hare));
-            if hare == None || hare == tort {
+            if hare.is_none() || hare == tort {
                 break;
             }
         }
 
-        if hare == None {
-            return None;
-        }
+        hare?;
 
         // At this point the start of the loop is equi-distant from the current
         // tortoise position and the start of the list, so the hare is moving in
@@ -118,14 +116,12 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
             }
             hare = list.step(hare);
             length += 1;
-            if hare == None || hare == tort {
+            if hare.is_none() || hare == tort {
                 break;
             }
         }
 
-        if hare == None {
-            return None;
-        }
+        hare?;
 
         // With the tortoise starting from the head of the list and the hare
         // spotted 'length' steps ahead, advance the tortoise and hare at the
