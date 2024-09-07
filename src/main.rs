@@ -1,9 +1,12 @@
-use std::{cmp::max, collections::HashMap, convert::From, hash::Hash};
+use std::{cmp::max, collections::HashMap, convert::From, fmt::Debug, hash::Hash};
 
 fn main() {
-    let list = List::from(['A', 'B', 'C', 'B']);
-    let detector = Floyd::default();
-    println!("{:?}", detector.find_cycle(list));
+    fn demo<D: CycleDetector<char> + Debug>(d: D) {
+        let list = List::from(['A', 'B', 'C', 'B']);
+        println!("{d:?} {:?}", d.find_cycle(list));
+    }
+    demo(Brent::default());
+    demo(Floyd::default());
 }
 
 trait SinglyLinked<T> {
@@ -45,7 +48,7 @@ trait CycleDetector<T> {
     fn find_cycle(&self, list: impl SinglyLinked<T>) -> Option<Cycle>;
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct Floyd {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
@@ -95,7 +98,7 @@ impl<T: Copy + PartialEq> CycleDetector<T> for Floyd {
     }
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct Brent {}
 
 impl<T: Copy + PartialEq> CycleDetector<T> for Brent {
